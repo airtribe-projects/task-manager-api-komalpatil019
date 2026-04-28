@@ -1,4 +1,3 @@
-// controllers/taskController.js
 import tasks from "../data/tasks.js";
 
 let id = 1;
