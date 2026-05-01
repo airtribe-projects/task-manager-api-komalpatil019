@@ -1,19 +1,39 @@
-import express from "express";
-import {
+const express = require("express");
+
+const {
   createTask,
   getTasks,
   getTaskById,
   updateTask,
   deleteTask,
-} from "../controllers/taskController.js";
-import { validateTask } from "../middleware/validate.js";
+  getTasksByPriority,
+} = require("../controllers/taskController");
+
+const validateTask = require("../middleware/validate");
 
 const router = express.Router();
 
-router.post("/", validateTask, createTask);
-router.get("/",  getTasks);
-router.get("/:id",  getTaskById);
-router.put("/:id", validateTask, updateTask);
-router.delete("/:id",  deleteTask);
+router.get("/", getTasks);
 
-export default router;
+router.get(
+  "/priority/:level",
+  getTasksByPriority
+);
+
+router.get("/:id", getTaskById);
+
+router.post(
+  "/",
+  validateTask,
+  createTask
+);
+
+router.put(
+  "/:id",
+  validateTask,
+  updateTask
+);
+
+router.delete("/:id", deleteTask);
+
+module.exports = router;

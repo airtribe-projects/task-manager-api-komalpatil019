@@ -1,27 +1,21 @@
-import tasks from "../data/tasks.js";
-
-let id = 1;
+const tasks = require("../data/tasks");
 
 // CREATE
-export const createTask = (req, res) => {
-  const { title, description, completed } = req.body;
-
-  // Validation
-  if (
-    !title ||
-    !description ||
-    typeof completed !== "boolean"
-  ) {
-    return res.status(400).json({
-      error: "Invalid task data",
-    });
-  }
+const createTask = (req, res) => {
+  const {
+    title,
+    description,
+    completed,
+    priority,
+  } = req.body;
 
   const newTask = {
     id: tasks.length + 1,
     title,
     description,
     completed,
+    priority: priority || "low",
+    createdAt: new Date(),
   };
 
   tasks.push(newTask);
@@ -30,25 +24,52 @@ export const createTask = (req, res) => {
 };
 
 // READ ALL
-export const getTasks = (req, res) => {
-  const { completed } = req.query;
+const getTasks = (req, res) => {
+  let result = [...tasks];
 
-  let filteredTasks = tasks;
+  const { completed, sort } = req.query;
 
+  // Filter by completion status
   if (completed !== undefined) {
-    filteredTasks = tasks.filter(
-      (task) => task.completed === (completed === "true")
+    result = result.filter(
+      (task) =>
+        task.completed === (completed === "true")
     );
   }
 
-  res.json(filteredTasks);
+  // Sort by creation date
+  if (sort === "asc") {
+    result.sort(
+      (a, b) =>
+        new Date(a.createdAt) -
+        new Date(b.createdAt)
+    );
+  }
+
+  if (sort === "desc") {
+    result.sort(
+      (a, b) =>
+        new Date(b.createdAt) -
+        new Date(a.createdAt)
+    );
+  }
+
+  res.status(200).json(result);
 };
 
-// READ ONE
-export const getTaskById = (req, res) => {
+// READ BY ID
+const getTaskById = (req, res) => {
   const taskId = Number(req.params.id);
 
-  const task = tasks.find((t) => t.id === taskId);
+  if (isNaN(taskId)) {
+    return res.status(400).json({
+      error: "Invalid task ID",
+    });
+  }
+
+  const task = tasks.find(
+    (t) => t.id === taskId
+  );
 
   if (!task) {
     return res.status(404).json({
@@ -59,11 +80,36 @@ export const getTaskById = (req, res) => {
   res.status(200).json(task);
 };
 
+// READ BY PRIORITY
+const getTasksByPriority = (req, res) => {
+  const level = req.params.level;
+
+  const allowedPriorities = [
+    "low",
+    "medium",
+    "high",
+  ];
+
+  if (!allowedPriorities.includes(level)) {
+    return res.status(400).json({
+      error: "Invalid priority level",
+    });
+  }
+
+  const filteredTasks = tasks.filter(
+    (task) => task.priority === level
+  );
+
+  res.status(200).json(filteredTasks);
+};
+
 // UPDATE
-export const updateTask = (req, res) => {
+const updateTask = (req, res) => {
   const taskId = Number(req.params.id);
 
-  const task = tasks.find((t) => t.id === taskId);
+  const task = tasks.find(
+    (t) => t.id === taskId
+  );
 
   if (!task) {
     return res.status(404).json({
@@ -71,30 +117,31 @@ export const updateTask = (req, res) => {
     });
   }
 
-  const { title, description, completed } = req.body;
-
-  if (
-    !title ||
-    !description ||
-    typeof completed !== "boolean"
-  ) {
-    return res.status(400).json({
-      error: "Invalid task data",
-    });
-  }
+  const {
+    title,
+    description,
+    completed,
+    priority,
+  } = req.body;
 
   task.title = title;
   task.description = description;
   task.completed = completed;
 
+  if (priority !== undefined) {
+    task.priority = priority;
+  }
+
   res.status(200).json(task);
 };
 
 // DELETE
-export const deleteTask = (req, res) => {
+const deleteTask = (req, res) => {
   const taskId = Number(req.params.id);
 
-  const index = tasks.findIndex((t) => t.id === taskId);
+  const index = tasks.findIndex(
+    (t) => t.id === taskId
+  );
 
   if (index === -1) {
     return res.status(404).json({
@@ -105,4 +152,13 @@ export const deleteTask = (req, res) => {
   const deletedTask = tasks.splice(index, 1);
 
   res.status(200).json(deletedTask[0]);
+};
+
+module.exports = {
+  createTask,
+  getTasks,
+  getTaskById,
+  getTasksByPriority,
+  updateTask,
+  deleteTask,
 };
